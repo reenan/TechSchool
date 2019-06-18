@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Petshop</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto|Varela+Round">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+<link rel="stylesheet" href="petshop.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+<link rel="icon" href="https://www.allforpets.ca/wp-content/uploads/favicon.png" type="image/png">
+
+<script type="text/javascript">
+$(document).ready(function(){
+    const cpf = document.location.search.split('=')[1]
+
+    const carregarPets = () => {
+        $.getJSON(`/pessoas/${cpf}/pets`, (pets) => {
+            $('#petsBody').empty()
+    
+            pets.forEach(pet => {
+                $('#petsBody').append(
+                    `
+                    <tr>
+						<td>${pet.nome}</td>
+						<td>${pet.especie}</td>
+						<td>${pet.raca}</td>
+                        <td>${pet.idade}</td>
+                        <td>${pet.adotado ? 'Sim' : 'Não'}</td>
+                        <td>
+                            <a href="#editEmployeeModal" class="edit" data-toggle="modal" data-value="${pet.codigo}"><i class="material-icons" data-toggle="tooltip" title="Editar">&#xE254;</i></a>
+							<a href="#deleteEmployeeModal" class="delete" data-toggle="modal" data-value="${pet.codigo}"><i class="material-icons" data-toggle="tooltip" title="Deletar">&#xE872;</i></a>
+                        </td>
+                    </tr>
+                    `
+                )
+            })
+    
+            // Activate tooltip
+            $('[data-toggle="tooltip"]').tooltip()
+
+            $('#petsBody .edit').on('click', (e) => {
+                const codigo = $(e.target.parentElement).data('value')
+                $.getJSON(`/pessoas/${cpf}/pets/${codigo}`, (pet) => {
+                    $('#editForm [name="codigo"]').val(pet.codigo)
+                    $('#editForm [name="nome"]').val(pet.nome)
+                    $('#editForm [name="especie"]').val(pet.especie)
+                    $('#editForm [name="raca"]').val(pet.raca)
+                    $('#editForm [name="idade"]').val(pet.idade)
+                    $('#editForm [name="adotado"]').prop('checked', pet.adotado)
+                })
+			})
+			
+			$('#petsBody .delete').on('click', (e) => {
+				const codigo = $(e.target.parentElement).data('value')
+				$('#deleteForm [name="codigo"]').val(codigo)
+            })
+        })
+    }
+
+    carregarPets()
+
+    $('#addForm').on('submit', (e) => {
+        e.preventDefault()
+        let { nome, especie, raca, idade, adotado } = e.target
+
+        $.ajax(`/pessoas/${cpf}/pets`, {
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                nome: nome.value,
+                especie: especie.value,
+                raca: raca.value,
+                idade: idade.value,
+                adotado: adotado.checked
+            }),
+            error: (xhr, status) => {
+                console.log(xhr, status)
+                alert('Ocorreu um erro')
+            },
+            success: (data, status) => {
+                console.log(data, status)
+                $('#addEmployeeModal .close').click()
+                carregarPets()
+                e.target.reset()
+            }
+        })
+    })
+
+    $('#editForm').on('submit', (e) => {
+        e.preventDefault()
+        let { codigo, nome, especie, raca, idade, adotado } = e.target
+
+        $.ajax(`/pessoas/${cpf}/pets/${codigo.value}`, {
+            method: 'PUT',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                nome: nome.value,
+                especie: especie.value,
+                raca: raca.value,
+                idade: idade.value,
+                adotado: adotado.checked
+            }),
+            error: (xhr, status) => {
+                console.log(xhr, status)
+                alert('Ocorreu um erro')
+            },
+            success: (data, status) => {
+                console.log(data, status)
+                $('#editEmployeeModal .close').click()
+                carregarPets()
+                e.target.reset()
+            }
+        })
+	})
+	
+	$('#deleteForm').on('submit', (e) => {
+        e.preventDefault()
+        let { codigo } = e.target
+
+        $.ajax(`/pessoas/${cpf}/pets/${codigo.value}`, {
+            method: 'DELETE',
+            contentType: 'application/json',
+            error: (xhr, status) => {
+                console.log(xhr, status)
+                alert('Ocorreu um erro')
+            },
+            success: (data, status) => {
+                console.log(data, status)
+                $('#deleteEmployeeModal .close').click()
+                carregarPets()
+                e.target.reset()
+            }
+        })
+    })
+});
+</script>
+</head>
+<body>
+    <div class="container">
+        <div class="table-wrapper">
+            <div class="table-title">
+                <div class="row">
+                    <div class="col-sm-6">
+						<h2>
+                            <a href='/'>Petshop</a>
+                            <b>Pets</b>
+                        </h2>
+					</div>
+					<div class="col-sm-6">
+						<a href="#addEmployeeModal" class="btn btn-success" data-toggle="modal"><i class="material-icons">&#xE147;</i> <span>Adicionar Novo Pet</span></a>
+					</div>
+                </div>
+            </div>
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Espécie</th>
+                        <th>Raça</th>
+                        <th>Idade</th>
+						<th>Adotado</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="petsBody"></tbody>
+            </table>
+        </div>
+    </div>
+	<!-- Add Modal HTML -->
+	<div id="addEmployeeModal" class="modal fade">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<form id="addForm">
+					<div class="modal-header">						
+						<h4 class="modal-title">Adicionar Pet</h4>
+						<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+					</div>
+					<div class="modal-body">					
+                        <div class="form-group">
+                            <label>Código</label>
+                            <input type="text" class="form-control" name="codigo" disabled>
+                        </div>
+						<div class="form-group">
+							<label>Nome</label>
+							<input type="text" class="form-control" name="nome" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Espécie</label>
+                            <input type="text" class="form-control" name="especie" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Raça</label>
+                            <input type="text" class="form-control" name="raca" required>
+                        </div>
+						<div class="form-group">
+							<label>Idade</label>
+							<input type="number" class="form-control" name="idade" min="0" max="200" required>
+						</div>
+                        <div class="form-group">
+                            <label>Adotado</label>
+                            <input type="checkbox" name="adotado">
+                        </div>
+					</div>
+					<div class="modal-footer">
+						<input type="button" class="btn btn-default" data-dismiss="modal" value="Cancelar">
+						<input type="submit" class="btn btn-success" value="Adicionar">
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+	<!-- Edit Modal HTML -->
+	<div id="editEmployeeModal" class="modal fade">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<form id="editForm">
+					<div class="modal-header">						
+						<h4 class="modal-title">Editar Pet</h4>
+						<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+					</div>
+					<div class="modal-body">					
+                        <div class="form-group">
+                            <label>Código</label>
+                            <input type="text" class="form-control" name="codigo" disabled>
+                        </div>
+                        <div class="form-group">
+                            <label>Nome</label>
+                            <input type="text" class="form-control" name="nome" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Espécie</label>
+                            <input type="text" class="form-control" name="especie" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Raça</label>
+                            <input type="text" class="form-control" name="raca" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Idade</label>
+                            <input type="number" class="form-control" name="idade" min="0" max="200" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Adotado</label>
+                            <input type="checkbox" name="adotado">
+                        </div>
+					</div>
+					<div class="modal-footer">
+						<input type="button" class="btn btn-default" data-dismiss="modal" value="Cancelar">
+						<input type="submit" class="btn btn-info" value="Salvar">
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+	<!-- Delete Modal HTML -->
+	<div id="deleteEmployeeModal" class="modal fade">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<form id="deleteForm">
+					<div class="modal-header">						
+						<h4 class="modal-title">Deletar Pet</h4>
+						<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+					</div>
+					<div class="modal-body">					
+						<p>Tem certeza de que deseja deletar esse registro?</p>
+						<p class="text-warning"><small>Esta ação não pode ser revertida.</small></p>
+					</div>
+					<div class="modal-footer">
+						<input type="hidden" name="codigo" />
+						<input type="button" class="btn btn-default" data-dismiss="modal" value="Cancelar">
+						<input type="submit" class="btn btn-danger" value="Deletar">
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+</body>
+</html>                                		                            
